@@ -17,6 +17,7 @@ DesafioTarget.sln
 │   └── Desafio.Web/           # Interface web + API REST (ASP.NET Core, Swagger)
 ├── tests/Desafio.Tests/       # Testes unitários e de integração da API (xUnit)
 ├── sql/estoque.sql            # Modelagem de referência do estoque em SQL Server
+├── SECURITY.md                # Validação de segurança: achados, correções e riscos aceitos
 └── Dockerfile                 # Imagem da interface web
 ```
 
@@ -51,7 +52,7 @@ Uma aba para cada exercício, usando os mesmos arquivos JSON do app de console:
 
 ### API
 
-A documentação interativa fica em **http://localhost:5080/swagger**.
+A documentação interativa fica em **http://localhost:5080/swagger** (só no ambiente de desenvolvimento, que é o padrão do `dotnet run`).
 
 | Método | Rota | O que faz |
 |--------|------|-----------|
@@ -66,6 +67,11 @@ A documentação interativa fica em **http://localhost:5080/swagger**.
 
 - **Unitários** (`Desafio.Core`): faixas e arredondamento da comissão, todas as validações do estoque, restauração do histórico e cálculo de juros.
 - **Integração** (`ApiTests`): sobem a API em memória com `WebApplicationFactory` e testam os endpoints, incluindo os erros `400` e a persistência do histórico entre reinicializações.
+- **Segurança**: limites de entrada, estouro de inteiro, cabeçalhos de segurança, filtro de `Host`, *rate limiting* e Swagger desligado em produção.
+
+## Segurança
+
+A aplicação passou por uma validação de segurança (OWASP Top 10, testes de ataque e varredura de dependências). Foram corrigidos 10 problemas; o principal era um estouro de inteiro que permitia deixar o estoque negativo. Os detalhes, as proteções e os riscos aceitos estão em **[SECURITY.md](SECURITY.md)**.
 
 ## Exercício 1 – Comissões
 

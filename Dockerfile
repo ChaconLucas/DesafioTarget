@@ -12,6 +12,9 @@ RUN dotnet test tests/Desafio.Tests -c Release \
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app .
+# Roda com o usuário sem privilégios da imagem oficial; só a pasta do histórico precisa de escrita.
+RUN mkdir -p /app/App_Data && chown $APP_UID /app/App_Data
+USER $APP_UID
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Desafio.Web.dll"]

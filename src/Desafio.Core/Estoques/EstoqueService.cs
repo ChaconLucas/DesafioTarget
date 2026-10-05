@@ -32,6 +32,12 @@ public class EstoqueException(string mensagem) : Exception(mensagem);
 
 public class EstoqueService
 {
+    /// <summary>Maior quantidade aceita numa única movimentação.</summary>
+    public const int QuantidadeMaxima = 1_000_000;
+
+    /// <summary>Tamanho máximo da descrição de uma movimentação.</summary>
+    public const int DescricaoMaxima = 200;
+
     private readonly Dictionary<int, Produto> _produtos;
     private readonly List<Movimentacao> _historico = [];
     private readonly Func<DateTime> _agora;
@@ -78,8 +84,12 @@ public class EstoqueService
             throw new EstoqueException("Tipo de movimentação inválido.");
         if (quantidade <= 0)
             throw new EstoqueException("A quantidade deve ser maior que zero.");
+        if (quantidade > QuantidadeMaxima)
+            throw new EstoqueException($"A quantidade máxima por movimentação é {QuantidadeMaxima:N0}.");
         if (string.IsNullOrWhiteSpace(descricao))
             throw new EstoqueException("Informe uma descrição para a movimentação.");
+        if (descricao.Trim().Length > DescricaoMaxima)
+            throw new EstoqueException($"A descrição pode ter no máximo {DescricaoMaxima} caracteres.");
 
         var produto = ObterProduto(codigoProduto);
         var anterior = produto.Quantidade;
@@ -89,7 +99,16 @@ public class EstoqueService
                 $"Saldo insuficiente: o produto {produto.CodigoProduto} ({produto.DescricaoProduto}) " +
                 $"tem {anterior} em estoque e foi solicitada a saída de {quantidade}.");
 
-        produto.Quantidade = tipo == TipoMovimentacao.Entrada ? anterior + quantidade : anterior - quantidade;
+        // checked: se a soma estourar o limite de int, falha em vez de virar um saldo negativo.
+        try
+        {
+            produto.Quantidade = checked(tipo == TipoMovimentacao.Entrada ? anterior + quantidade : anterior - quantidade);
+        }
+        catch (OverflowException)
+        {
+            throw new EstoqueException(
+                $"A entrada de {quantidade} ultrapassa o estoque máximo permitido para o produto {produto.CodigoProduto}.");
+        }
 
         var movimentacao = new Movimentacao(
             Id: id,

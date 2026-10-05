@@ -6,6 +6,7 @@ using Desafio.Core.Juros;
 using Desafio.Web;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AdicionarSeguranca();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o => o.SwaggerDoc("v1", new() { Title = "Desafio Target Sistemas", Version = "v1" }));
@@ -20,14 +21,19 @@ builder.Services.AddSingleton(sp => new EstoqueRepositorio(
     sp.GetRequiredService<ILogger<EstoqueRepositorio>>()));
 
 var app = builder.Build();
+app.UsarSeguranca();
 app.UseDefaultFiles();
 // no-cache: o navegador sempre confere se a página mudou, em vez de mostrar uma versão antiga.
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache",
 });
-app.UseSwagger();
-app.UseSwaggerUI();
+// A documentação da API só fica exposta em desenvolvimento (dotnet run usa o ambiente Development).
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 // ---------- Exercício 1: comissões ----------
 
@@ -81,6 +87,7 @@ estoque.MapPost("/movimentacoes", (NovaMovimentacao req, EstoqueRepositorio repo
         return Results.BadRequest(new RespostaErro(ex.Message));
     }
 })
+.RequireRateLimiting(Seguranca.PoliticaEscrita)
 .WithSummary("Lança uma entrada ou saída e devolve o estoque final")
 .Produces<Movimentacao>()
 .Produces<RespostaErro>(StatusCodes.Status400BadRequest);
@@ -89,7 +96,9 @@ estoque.MapDelete("/movimentacoes", (EstoqueRepositorio repo) =>
 {
     repo.Reiniciar();
     return Results.NoContent();
-}).WithSummary("Apaga o histórico e volta ao saldo inicial");
+})
+.RequireRateLimiting(Seguranca.PoliticaEscrita)
+.WithSummary("Apaga o histórico e volta ao saldo inicial");
 
 // ---------- Exercício 3: juros ----------
 

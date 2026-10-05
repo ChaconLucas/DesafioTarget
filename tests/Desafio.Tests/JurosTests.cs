@@ -50,4 +50,27 @@ public class JurosTests
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             CalculadoraJuros.Calcular(valor, new DateOnly(2026, 10, 1), Hoje));
     }
+
+    [Fact]
+    public void Valor_acima_do_maximo_gera_erro_em_vez_de_estourar()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            CalculadoraJuros.Calcular(decimal.MaxValue, DateOnly.MinValue, Hoje));
+    }
+
+    [Fact]
+    public void Valor_maximo_com_atraso_maximo_nao_estoura()
+    {
+        var r = CalculadoraJuros.Calcular(CalculadoraJuros.ValorMaximo, DateOnly.MinValue, DateOnly.MaxValue);
+        Assert.True(r.ValorAtualizado > CalculadoraJuros.ValorMaximo);
+    }
+
+    [Theory]
+    [InlineData(-0.01)]
+    [InlineData(1.01)]
+    public void Taxa_fora_do_intervalo_gera_erro(double taxa)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            CalculadoraJuros.Calcular(100m, new DateOnly(2026, 1, 1), Hoje, (decimal)taxa));
+    }
 }

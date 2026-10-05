@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Desafio.Tests;
@@ -21,8 +22,12 @@ public class ApiTests : IDisposable
 
     private string ArquivoHistorico => Path.Combine(_pasta, "movimentacoes.json");
 
-    private WebApplicationFactory<Program> CriarFabrica() =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseSetting("Estoque:ArquivoHistorico", ArquivoHistorico));
+    private WebApplicationFactory<Program> CriarFabrica(Action<IWebHostBuilder>? configurar = null) =>
+        new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
+        {
+            b.UseSetting("Estoque:ArquivoHistorico", ArquivoHistorico);
+            configurar?.Invoke(b);
+        });
 
     public void Dispose()
     {
@@ -136,5 +141,94 @@ public class ApiTests : IDisposable
 
         Assert.Contains("Desafio Target Sistemas", await cliente.GetStringAsync("/"));
         Assert.Contains("/api/estoque/movimentacoes", await cliente.GetStringAsync("/swagger/v1/swagger.json"));
+    }
+
+    // ---------- segurança ----------
+
+    [Fact]
+    public async Task Respostas_tem_cabecalhos_de_seguranca()
+    {
+        var resposta = await _fabrica.CreateClient().GetAsync("/");
+
+        Assert.Equal("nosniff", resposta.Headers.GetValues("X-Content-Type-Options").Single());
+        Assert.Equal("DENY", resposta.Headers.GetValues("X-Frame-Options").Single());
+        var csp = resposta.Headers.GetValues("Content-Security-Policy").Single();
+        Assert.Contains("script-src 'self'", csp);
+        Assert.Contains("frame-ancestors 'none'", csp);
+    }
+
+    [Fact]
+    public async Task Host_desconhecido_e_rejeitado()
+    {
+        var cliente = _fabrica.CreateClient();
+        var requisicao = new HttpRequestMessage(HttpMethod.Get, "/api/estoque/produtos");
+        requisicao.Headers.Host = "site-malicioso.example";
+
+        var resposta = await cliente.SendAsync(requisicao);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Excesso_de_lancamentos_devolve_429()
+    {
+        using var fabrica = CriarFabrica(b => b.UseSetting("Seguranca:EscritasPorMinuto", "2"));
+        var cliente = fabrica.CreateClient();
+
+        var status = new List<HttpStatusCode>();
+        for (var i = 0; i < 3; i++)
+            status.Add((await cliente.PostAsJsonAsync("/api/estoque/movimentacoes", Movimento(101, "Entrada", 1))).StatusCode);
+
+        Assert.Equal([HttpStatusCode.OK, HttpStatusCode.OK, HttpStatusCode.TooManyRequests], status);
+    }
+
+    [Fact]
+    public async Task Entrada_que_estouraria_o_estoque_devolve_400()
+    {
+        var cliente = _fabrica.CreateClient();
+        var resposta = await cliente.PostAsJsonAsync("/api/estoque/movimentacoes", Movimento(101, "Entrada", int.MaxValue));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+        var produtos = await cliente.GetFromJsonAsync<JsonElement>("/api/estoque/produtos");
+        Assert.Equal(150, produtos[0].GetProperty("estoque").GetInt32());
+    }
+
+    [Fact]
+    public async Task Descricao_muito_longa_devolve_400()
+    {
+        var resposta = await _fabrica.CreateClient().PostAsJsonAsync("/api/estoque/movimentacoes", Movimento(101, "Entrada", 1, new string('A', 5000)));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+        Assert.False(File.Exists(ArquivoHistorico));
+    }
+
+    [Fact]
+    public async Task Juros_com_valor_extremo_devolve_400_e_nao_500()
+    {
+        var resposta = await _fabrica.CreateClient().GetAsync("/api/juros?valor=79228162514264337593543950335&vencimento=0001-01-01");
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("{\"codigoProduto\":101,\"tipo\":\"Roubo\",\"quantidade\":1,\"descricao\":\"x\"}")]
+    [InlineData("{json quebrado")]
+    public async Task Corpo_invalido_devolve_400_sem_detalhes_internos(string corpo)
+    {
+        var resposta = await _fabrica.CreateClient().PostAsync("/api/estoque/movimentacoes",
+            new StringContent(corpo, System.Text.Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+        Assert.DoesNotContain("   at ", await resposta.Content.ReadAsStringAsync()); // sem stack trace
+    }
+
+    [Fact]
+    public async Task Swagger_nao_fica_exposto_em_producao()
+    {
+        using var producao = CriarFabrica(b => b.UseEnvironment("Production"));
+
+        var resposta = await producao.CreateClient().GetAsync("/swagger/v1/swagger.json");
+
+        Assert.Equal(HttpStatusCode.NotFound, resposta.StatusCode);
     }
 }

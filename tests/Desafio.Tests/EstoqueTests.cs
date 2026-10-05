@@ -97,4 +97,29 @@ public class EstoqueTests
 
         Assert.Throws<EstoqueException>(() => servico.Restaurar([invalido]));
     }
+
+    [Fact]
+    public void Quantidade_acima_do_maximo_gera_erro()
+    {
+        var ex = Assert.Throws<EstoqueException>(() =>
+            CriarServico().Movimentar(101, TipoMovimentacao.Entrada, EstoqueService.QuantidadeMaxima + 1, "Compra"));
+        Assert.Contains("máxima", ex.Message);
+    }
+
+    [Fact]
+    public void Descricao_longa_demais_gera_erro()
+    {
+        Assert.Throws<EstoqueException>(() =>
+            CriarServico().Movimentar(101, TipoMovimentacao.Entrada, 1, new string('a', EstoqueService.DescricaoMaxima + 1)));
+    }
+
+    [Fact]
+    public void Entrada_que_estouraria_o_int_gera_erro_e_nao_altera_o_saldo()
+    {
+        var servico = new EstoqueService([new Produto { CodigoProduto = 1, DescricaoProduto = "X", Quantidade = int.MaxValue - 5 }]);
+
+        Assert.Throws<EstoqueException>(() => servico.Movimentar(1, TipoMovimentacao.Entrada, 10, "Compra"));
+        Assert.Equal(int.MaxValue - 5, servico.ObterProduto(1).Quantidade);
+        Assert.Empty(servico.Historico);
+    }
 }
