@@ -104,7 +104,7 @@
     .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 0; flex-wrap: wrap; }
     .card-head h2 { font-size: 15px; margin: 0; letter-spacing: -.01em; }
     .card-body { padding: 18px 20px 20px; }
-    .grid-2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; align-items: start; }
+    .grid-2 { display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; align-items: start; }
     .grid-2 > .card { margin-bottom: 0; }
     @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
 
@@ -220,18 +220,23 @@
     tr.vendedor { cursor: pointer; }
     tr.vendedor .chev { width: 16px; height: 16px; color: var(--faint); transition: transform .2s; flex: none; }
     tr.vendedor.aberto .chev { transform: rotate(90deg); }
-    tr.detalhe td { padding: 0; background: var(--surface-2); }
-    tr.detalhe:hover td { background: var(--surface-2); }
-    .det { padding: 6px 20px 16px 74px; }
-    .det table { width: auto; min-width: 380px; }
-    .det table th { background: none; border-top: 0; padding: 8px 12px; }
-    .det table td { padding: 7px 12px; }
-    .det tbody tr:hover td { background: none; }
-    .det .chip { padding: 2px 8px; font-size: 11.5px; }
+    tr.venda td {
+      background: var(--surface-2); color: var(--muted); font-size: 13.5px;
+      padding-top: 7px; padding-bottom: 7px; border-top: 0 !important;
+    }
+    tbody tr.venda:hover td { background: var(--surface-2); }
+    tr.venda.primeira td { padding-top: 14px; box-shadow: inset 0 1px 0 var(--border); }
+    tr.venda.ultima td { padding-bottom: 14px; }
+    tr.venda .rotulo { padding-left: 86px; }
+    tr.venda .valor { color: var(--text); }
+    tr.venda .chip { padding: 1px 8px; font-size: 11.5px; }
+    tr.vendedor.aberto td { background: var(--surface-2); }
     .muted { color: var(--muted); }
     .grid-2 th, .grid-2 td { padding-left: 14px; padding-right: 14px; }
     .grid-2 th:first-child, .grid-2 td:first-child { padding-left: 20px; }
-    .grid-2 th:last-child, .grid-2 td:last-child { padding-right: 20px; width: 30%; }
+    .grid-2 th:last-child, .grid-2 td:last-child { padding-right: 20px; }
+    table.fixa { table-layout: fixed; }
+    table.fixa td:nth-child(2) { white-space: normal; }
 
     .actions { display: flex; align-items: center; gap: 8px; }
     .ghost {
@@ -244,7 +249,7 @@
     .ghost svg { width: 14px; height: 14px; }
 
     @media (max-width: 640px) {
-      .det { padding-left: 20px; }
+      tr.venda .rotulo { padding-left: 44px; }
       header .wrap { height: auto; padding-top: 12px; padding-bottom: 12px; flex-direction: column; align-items: stretch; }
       nav button { flex: 1; justify-content: center; }
       .brand small { display: none; }
@@ -322,7 +327,8 @@
           <div class="card-head"><h2>Produtos</h2><span class="chip" id="total-itens"></span></div>
           <div class="card-body" style="padding: 16px 0 0">
             <div class="scroll">
-              <table>
+              <table class="fixa">
+                <colgroup><col style="width:78px"><col><col style="width:70px"><col style="width:22%"></colgroup>
                 <thead><tr><th>Código</th><th>Produto</th><th class="num">Saldo</th><th>Nível</th></tr></thead>
                 <tbody id="tb-produtos"></tbody>
               </table>
@@ -450,24 +456,28 @@
       const faixa = p => `<span class="chip c${Math.round(p * 100)}"><i></i>${pct(p)}</span>`;
       $('tb-comissoes').innerHTML = vendedores.map((v, i) => {
         const part = v.totalComissao / total.totalComissao;
-        const linhas = v.vendas.map(x => `
-          <tr><td class="num">${moeda(x.valor)}</td><td>${faixa(x.percentual)}</td><td class="num">${moeda(x.comissao)}</td></tr>`).join('');
+        const n = v.vendas.length;
+        const linhas = v.vendas.map((x, j) => `
+          <tr class="venda${j === 0 ? ' primeira' : ''}${j === n - 1 ? ' ultima' : ''}" data-v="${i}" hidden>
+            <td class="rotulo">Venda ${j + 1}</td>
+            <td class="num">${faixa(x.percentual)}</td>
+            <td class="num valor">${moeda(x.valor)}</td>
+            <td class="num valor">${moeda(x.comissao)}</td>
+            <td></td>
+          </tr>`).join('');
         return `<tr class="vendedor" data-i="${i}" tabindex="0" aria-expanded="false">
           <td><div class="who">${chev}<span class="rank">${i + 1}</span><span class="avatar">${iniciais(v.vendedor)}</span>${esc(v.vendedor)}</div></td>
           <td class="num">${v.quantidadeVendas}</td>
           <td class="num">${moeda(v.totalVendido)}</td>
           <td class="num"><strong>${moeda(v.totalComissao)}</strong></td>
           <td><div class="share"><div class="bar"><i style="width:${(part * 100).toFixed(1)}%"></i></div><small>${pct(part)}</small></div></td>
-        </tr>
-        <tr class="detalhe" hidden><td colspan="5"><div class="det">
-          <table><thead><tr><th class="num">Valor da venda</th><th>Faixa</th><th class="num">Comissão</th></tr></thead><tbody>${linhas}</tbody></table>
-        </div></td></tr>`;
+        </tr>${linhas}`;
       }).join('');
       document.querySelectorAll('tr.vendedor').forEach(tr => {
         const alternar = () => {
           const aberto = tr.classList.toggle('aberto');
           tr.setAttribute('aria-expanded', aberto);
-          tr.nextElementSibling.hidden = !aberto;
+          document.querySelectorAll(`tr.venda[data-v="${tr.dataset.i}"]`).forEach(l => l.hidden = !aberto);
         };
         tr.addEventListener('click', alternar);
         tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternar(); } });
@@ -482,7 +492,7 @@
       // Escala relativa ao maior saldo, só para visualização.
       const max = Math.max(...produtos.map(p => p.estoque), 1);
       const cls = qtd < 50 ? 'low' : qtd < 100 ? 'warn' : 'ok';
-      return `<div class="share" style="min-width:64px"><div class="bar ${cls}"><i style="width:${(qtd / max * 100).toFixed(1)}%"></i></div></div>`;
+      return `<div class="share" style="min-width:0"><div class="bar ${cls}"><i style="width:${(qtd / max * 100).toFixed(1)}%"></i></div></div>`;
     }
 
     function atualizarSaldo() {
