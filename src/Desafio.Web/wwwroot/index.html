@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Desafio Target Sistemas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface-2: #f8f9fb;
+      --text: #111827;
+      --muted: #6b7280;
+      --faint: #9ca3af;
+      --border: #e7e9ee;
+      --accent: #d6213b;
+      --accent-2: #ff5c5c;
+      --accent-soft: rgba(214, 33, 59, .08);
+      --ok: #15803d;
+      --ok-soft: rgba(21, 128, 61, .1);
+      --warn: #b45309;
+      --warn-soft: rgba(180, 83, 9, .1);
+      --err: #b91c1c;
+      --err-soft: rgba(185, 28, 28, .09);
+      --track: #eef0f3;
+      --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 4px 16px rgba(16, 24, 40, .04);
+      --radius: 14px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d0f13;
+        --surface: #16191f;
+        --surface-2: #1c2028;
+        --text: #eef0f4;
+        --muted: #9aa1ae;
+        --faint: #6b7280;
+        --border: #262b34;
+        --accent: #ff4d63;
+        --accent-2: #ff8a5c;
+        --accent-soft: rgba(255, 77, 99, .12);
+        --ok: #4ade80;
+        --ok-soft: rgba(74, 222, 128, .12);
+        --warn: #fbbf24;
+        --warn-soft: rgba(251, 191, 36, .12);
+        --err: #f87171;
+        --err-soft: rgba(248, 113, 113, .12);
+        --track: #232832;
+        --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0;
+      font: 14.5px/1.55 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* ---------- cabeçalho ---------- */
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in srgb, var(--surface) 85%, transparent);
+      backdrop-filter: saturate(1.4) blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .logo {
+      width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; font-weight: 700; font-size: 15px; letter-spacing: -.02em;
+    }
+    .brand b { display: block; font-size: 15px; letter-spacing: -.01em; }
+    .brand small { display: block; color: var(--muted); font-size: 12px; margin-top: -2px; }
+    nav { display: flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--border); padding: 4px; border-radius: 11px; }
+    nav button {
+      display: flex; align-items: center; gap: 7px;
+      border: 0; background: none; color: var(--muted);
+      font: inherit; font-weight: 600; font-size: 13.5px; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    nav button:hover { color: var(--text); }
+    nav button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+    nav svg { width: 16px; height: 16px; }
+
+    /* ---------- layout ---------- */
+    main.wrap { padding-top: 28px; padding-bottom: 64px; }
+    .page-head { margin-bottom: 20px; }
+    .page-head h1 { font-size: 22px; letter-spacing: -.02em; margin: 0; }
+    .page-head p { margin: 4px 0 0; color: var(--muted); }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      margin-bottom: 18px; overflow: hidden;
+    }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 0; flex-wrap: wrap; }
+    .card-head h2 { font-size: 15px; margin: 0; letter-spacing: -.01em; }
+    .card-body { padding: 18px 20px 20px; }
+    .grid-2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; align-items: start; }
+    .grid-2 > .card { margin-bottom: 0; }
+    @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* ---------- indicadores ---------- */
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+    @media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    .kpi {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 16px 18px;
+    }
+    .kpi small { color: var(--muted); font-size: 12.5px; font-weight: 500; }
+    .kpi strong { display: block; font-size: 22px; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kpi span { display: block; color: var(--faint); font-size: 12px; margin-top: 2px; }
+    .kpi.hl { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: #fff; }
+    .kpi.hl small, .kpi.hl span { color: rgba(255, 255, 255, .82); }
+
+    /* ---------- chips ---------- */
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 99px;
+      background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
+    }
+    .chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .chip.c0 { color: var(--faint); }
+    .chip.c1 { color: var(--warn); }
+    .chip.c5 { color: var(--ok); }
+
+    /* ---------- tabelas ---------- */
+    .scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 20px; text-align: left; white-space: nowrap; }
+    th {
+      font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); font-weight: 600;
+      background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    th.num { text-align: right; }
+    tbody tr + tr td { border-top: 1px solid var(--border); }
+    tbody tr:hover td { background: var(--surface-2); }
+    tfoot td { font-weight: 700; border-top: 1px solid var(--border); background: var(--surface-2); }
+    .empty { color: var(--muted); text-align: center; padding: 32px 20px; white-space: normal; }
+
+    .who { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+      width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none;
+      font-size: 11.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft);
+    }
+    .rank { color: var(--faint); font-size: 12px; font-weight: 600; width: 14px; }
+    .share { display: flex; align-items: center; gap: 10px; min-width: 150px; }
+    .bar { flex: 1; height: 6px; border-radius: 99px; background: var(--track); overflow: hidden; }
+    .bar > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+    .share small { color: var(--muted); font-size: 12px; width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+    .bar.ok > i { background: var(--ok); }
+    .bar.warn > i { background: var(--warn); }
+    .bar.low > i { background: var(--err); }
+
+    .tag { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+    .tag.Entrada { background: var(--ok-soft); color: var(--ok); }
+    .tag.Saida { background: var(--err-soft); color: var(--err); }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+    .delta { color: var(--muted); }
+    .delta strong { color: var(--text); }
+
+    /* ---------- formulários ---------- */
+    form { display: grid; gap: 14px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    label { display: grid; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+    input, select {
+      font: inherit; font-size: 14px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 9px; padding: 9px 12px; width: 100%; height: 40px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 3px; height: 40px; }
+    .seg input { display: none; }
+    .seg label {
+      display: grid; place-items: center; border-radius: 7px; cursor: pointer;
+      font-size: 13.5px; color: var(--muted); transition: background .15s, color .15s;
+    }
+    .seg input:checked + label { background: var(--surface); box-shadow: var(--shadow); }
+    .seg input[value="Entrada"]:checked + label { color: var(--ok); }
+    .seg input[value="Saida"]:checked + label { color: var(--err); }
+    button.primary {
+      font: inherit; font-weight: 600; color: #fff; height: 42px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: 0; border-radius: 9px; padding: 0 18px; cursor: pointer;
+      transition: transform .1s, filter .15s;
+    }
+    button.primary:hover { filter: brightness(1.06); }
+    button.primary:active { transform: scale(.98); }
+    .saldo { font-size: 12.5px; color: var(--muted); margin-top: -6px; }
+    .saldo strong { color: var(--text); }
+
+    .msg { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; font-size: 13.5px; margin-top: 14px; }
+    .msg.ok { background: var(--ok-soft); color: var(--ok); }
+    .msg.err { background: var(--err-soft); color: var(--err); }
+
+    /* ---------- juros ---------- */
+    .juros-res { display: grid; gap: 10px; }
+    .line { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px dashed var(--border); }
+    .line span { color: var(--muted); }
+    .line strong { font-variant-numeric: tabular-nums; }
+    .total-box {
+      margin-top: 6px; padding: 18px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff;
+    }
+    .total-box small { opacity: .85; font-size: 12.5px; }
+    .total-box strong { display: block; font-size: 28px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .placeholder { color: var(--muted); text-align: center; padding: 40px 10px; }
+    .placeholder svg { width: 36px; height: 36px; color: var(--faint); margin-bottom: 8px; }
+
+    /* ---------- detalhe de comissões ---------- */
+    tr.vendedor { cursor: pointer; }
+    tr.vendedor .chev { width: 16px; height: 16px; color: var(--faint); transition: transform .2s; flex: none; }
+    tr.vendedor.aberto .chev { transform: rotate(90deg); }
+    tr.detalhe td { padding: 0; background: var(--surface-2); }
+    tr.detalhe:hover td { background: var(--surface-2); }
+    .det { padding: 6px 20px 16px 74px; }
+    .det table { width: auto; min-width: 380px; }
+    .det table th { background: none; border-top: 0; padding: 8px 12px; }
+    .det table td { padding: 7px 12px; }
+    .det tbody tr:hover td { background: none; }
+    .det .chip { padding: 2px 8px; font-size: 11.5px; }
+    .muted { color: var(--muted); }
+    .grid-2 th, .grid-2 td { padding-left: 14px; padding-right: 14px; }
+    .grid-2 th:first-child, .grid-2 td:first-child { padding-left: 20px; }
+    .grid-2 th:last-child, .grid-2 td:last-child { padding-right: 20px; width: 30%; }
+
+    .actions { display: flex; align-items: center; gap: 8px; }
+    .ghost {
+      display: inline-flex; align-items: center; gap: 6px;
+      font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted);
+      background: none; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; cursor: pointer; text-decoration: none;
+      transition: color .15s, border-color .15s;
+    }
+    .ghost:hover { color: var(--text); border-color: var(--faint); }
+    .ghost svg { width: 14px; height: 14px; }
+
+    @media (max-width: 640px) {
+      .det { padding-left: 20px; }
+      header .wrap { height: auto; padding-top: 12px; padding-bottom: 12px; flex-direction: column; align-items: stretch; }
+      nav button { flex: 1; justify-content: center; }
+      .brand small { display: none; }
+      th, td { padding: 10px 14px; }
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand">
+        <div class="logo">T</div>
+        <div><b>Desafio Target Sistemas</b><small>Comissões · Estoque · Juros</small></div>
+      </div>
+      <div class="actions">
+      <nav role="tablist">
+        <button role="tab" data-tab="comissoes" aria-selected="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Comissões
+        </button>
+        <button role="tab" data-tab="estoque" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>Estoque
+        </button>
+        <button role="tab" data-tab="juros" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Juros
+        </button>
+      </nav>
+      <a class="ghost" href="/swagger" target="_blank" title="Documentação da API">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></svg>API
+      </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- ================= Exercício 1 ================= -->
+    <section id="comissoes">
+      <div class="page-head">
+        <h1>Comissões</h1>
+        <p>Comissão calculada venda a venda e somada por vendedor. Clique num vendedor para ver as vendas dele.</p>
+      </div>
+
+      <div class="kpis" id="kpis-comissoes"></div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Ranking de vendedores</h2>
+          <div class="chips">
+            <span class="chip c0"><i></i>&lt; R$ 100 · 0%</span>
+            <span class="chip c1"><i></i>&lt; R$ 500 · 1%</span>
+            <span class="chip c5"><i></i>≥ R$ 500 · 5%</span>
+          </div>
+        </div>
+        <div class="card-body" style="padding: 16px 0 0">
+          <div class="scroll">
+            <table>
+              <thead><tr><th>Vendedor</th><th class="num">Vendas</th><th class="num">Total vendido</th><th class="num">Comissão</th><th>Participação</th></tr></thead>
+              <tbody id="tb-comissoes"></tbody>
+              <tfoot id="tf-comissoes"></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Exercício 2 ================= -->
+    <section id="estoque" hidden>
+      <div class="page-head">
+        <h1>Estoque</h1>
+        <p>Lance entradas e saídas. A saída nunca pode ser maior que o saldo. O histórico fica salvo mesmo se o servidor reiniciar.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><h2>Produtos</h2><span class="chip" id="total-itens"></span></div>
+          <div class="card-body" style="padding: 16px 0 0">
+            <div class="scroll">
+              <table>
+                <thead><tr><th>Código</th><th>Produto</th><th class="num">Saldo</th><th>Nível</th></tr></thead>
+                <tbody id="tb-produtos"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Nova movimentação</h2></div>
+          <div class="card-body">
+            <form id="form-estoque">
+              <label>Produto <select name="codigoProduto" id="sel-produto" required></select></label>
+              <div class="saldo" id="saldo-atual"></div>
+              <div class="row">
+                <div style="display:grid;gap:6px">
+                  <span style="font-size:12.5px;font-weight:600;color:var(--muted)">Tipo</span>
+                  <div class="seg">
+                    <input type="radio" name="tipo" id="t-ent" value="Entrada" checked><label for="t-ent">Entrada</label>
+                    <input type="radio" name="tipo" id="t-sai" value="Saida"><label for="t-sai">Saída</label>
+                  </div>
+                </div>
+                <label>Quantidade <input name="quantidade" type="number" min="1" step="1" placeholder="0" required></label>
+              </div>
+              <label>Descrição <input name="descricao" placeholder="Ex.: Compra fornecedor, Venda balcão" required></label>
+              <button class="primary" type="submit">Lançar movimentação</button>
+            </form>
+            <div id="msg-estoque" class="msg" hidden></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="card-head"><h2>Histórico de movimentações</h2>
+          <div class="actions"><span class="chip" id="total-movs"></span>
+            <button class="ghost" id="btn-reiniciar" type="button" title="Apaga o histórico e volta ao saldo inicial">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Reiniciar
+            </button>
+          </div>
+        </div>
+        <div class="card-body" style="padding: 16px 0 0">
+          <div class="scroll">
+            <table>
+              <thead><tr><th>#</th><th>Data/hora</th><th>Produto</th><th>Tipo</th><th>Descrição</th><th class="num">Qtd.</th><th class="num">Saldo</th></tr></thead>
+              <tbody id="tb-historico"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Exercício 3 ================= -->
+    <section id="juros" hidden>
+      <div class="page-head">
+        <h1>Juros por atraso</h1>
+        <p>Juros simples de 2,5% por dia corrido de atraso, contados até hoje.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><h2>Dados da cobrança</h2></div>
+          <div class="card-body">
+            <form id="form-juros">
+              <label>Valor (R$) <input name="valor" inputmode="decimal" placeholder="1.500,00" required></label>
+              <label>Data de vencimento <input name="vencimento" type="date" required></label>
+              <button class="primary" type="submit">Calcular juros</button>
+            </form>
+            <div id="msg-juros" class="msg err" hidden></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Resultado</h2></div>
+          <div class="card-body">
+            <div id="res-vazio" class="placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M14 10h2M8 14h2M14 14h2M8 18h8"/></svg>
+              <div>Informe o valor e o vencimento para ver o cálculo.</div>
+            </div>
+            <div id="res-juros" class="juros-res" hidden></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const moeda = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const pct = v => (v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const iniciais = nome => nome.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase();
+    const icoOk = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>';
+    const icoErr = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>';
+    let produtos = [];
+
+    // ---------- abas ----------
+    function abrirAba(id) {
+      if (!document.querySelector(`nav button[data-tab="${id}"]`)) id = 'comissoes';
+      document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === id));
+      document.querySelectorAll('main section').forEach(s => s.hidden = s.id !== id);
+    }
+    document.querySelectorAll('nav button').forEach(btn => btn.addEventListener('click', () => {
+      history.replaceState(null, '', '#' + btn.dataset.tab);
+      abrirAba(btn.dataset.tab);
+    }));
+    abrirAba(location.hash.slice(1));
+
+    function mostrar(el, texto, tipo) {
+      el.innerHTML = (tipo === 'ok' ? icoOk : icoErr) + `<span>${esc(texto)}</span>`;
+      el.className = 'msg ' + tipo;
+      el.hidden = false;
+    }
+
+    // ---------- comissões ----------
+    async function carregarComissoes() {
+      const { vendedores, total } = await (await fetch('/api/comissoes')).json();
+      const top = vendedores[0];
+
+      $('kpis-comissoes').innerHTML = `
+        <div class="kpi"><small>Total vendido</small><strong>${moeda(total.totalVendido)}</strong><span>${vendedores.length} vendedores</span></div>
+        <div class="kpi hl"><small>Total de comissões</small><strong>${moeda(total.totalComissao)}</strong><span>${pct(total.totalComissao / total.totalVendido)} sobre as vendas</span></div>
+        <div class="kpi"><small>Vendas</small><strong>${total.quantidadeVendas}</strong><span>ticket médio ${moeda(total.totalVendido / total.quantidadeVendas)}</span></div>
+        <div class="kpi"><small>Maior comissão</small><strong>${esc(top.vendedor)}</strong><span>${moeda(top.totalComissao)}</span></div>`;
+
+      const chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>';
+      const faixa = p => `<span class="chip c${Math.round(p * 100)}"><i></i>${pct(p)}</span>`;
+      $('tb-comissoes').innerHTML = vendedores.map((v, i) => {
+        const part = v.totalComissao / total.totalComissao;
+        const linhas = v.vendas.map(x => `
+          <tr><td class="num">${moeda(x.valor)}</td><td>${faixa(x.percentual)}</td><td class="num">${moeda(x.comissao)}</td></tr>`).join('');
+        return `<tr class="vendedor" data-i="${i}" tabindex="0" aria-expanded="false">
+          <td><div class="who">${chev}<span class="rank">${i + 1}</span><span class="avatar">${iniciais(v.vendedor)}</span>${esc(v.vendedor)}</div></td>
+          <td class="num">${v.quantidadeVendas}</td>
+          <td class="num">${moeda(v.totalVendido)}</td>
+          <td class="num"><strong>${moeda(v.totalComissao)}</strong></td>
+          <td><div class="share"><div class="bar"><i style="width:${(part * 100).toFixed(1)}%"></i></div><small>${pct(part)}</small></div></td>
+        </tr>
+        <tr class="detalhe" hidden><td colspan="5"><div class="det">
+          <table><thead><tr><th class="num">Valor da venda</th><th>Faixa</th><th class="num">Comissão</th></tr></thead><tbody>${linhas}</tbody></table>
+        </div></td></tr>`;
+      }).join('');
+      document.querySelectorAll('tr.vendedor').forEach(tr => {
+        const alternar = () => {
+          const aberto = tr.classList.toggle('aberto');
+          tr.setAttribute('aria-expanded', aberto);
+          tr.nextElementSibling.hidden = !aberto;
+        };
+        tr.addEventListener('click', alternar);
+        tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternar(); } });
+      });
+      $('tf-comissoes').innerHTML = `
+        <tr><td>Total</td><td class="num">${total.quantidadeVendas}</td>
+        <td class="num">${moeda(total.totalVendido)}</td><td class="num">${moeda(total.totalComissao)}</td><td></td></tr>`;
+    }
+
+    // ---------- estoque ----------
+    function nivel(qtd) {
+      // Escala relativa ao maior saldo, só para visualização.
+      const max = Math.max(...produtos.map(p => p.estoque), 1);
+      const cls = qtd < 50 ? 'low' : qtd < 100 ? 'warn' : 'ok';
+      return `<div class="share" style="min-width:64px"><div class="bar ${cls}"><i style="width:${(qtd / max * 100).toFixed(1)}%"></i></div></div>`;
+    }
+
+    function atualizarSaldo() {
+      const p = produtos.find(x => x.codigoProduto === Number($('sel-produto').value));
+      $('saldo-atual').innerHTML = p ? `Saldo atual: <strong>${p.estoque}</strong> unidades` : '';
+    }
+
+    async function carregarEstoque() {
+      const [p, h] = await Promise.all([
+        fetch('/api/estoque/produtos').then(r => r.json()),
+        fetch('/api/estoque/movimentacoes').then(r => r.json()),
+      ]);
+      produtos = p;
+
+      const sel = $('sel-produto'), atual = sel.value;
+      sel.innerHTML = produtos.map(x => `<option value="${x.codigoProduto}">${x.codigoProduto} · ${esc(x.descricaoProduto)}</option>`).join('');
+      if (atual) sel.value = atual;
+      atualizarSaldo();
+
+      $('total-itens').textContent = `${produtos.reduce((s, x) => s + x.estoque, 0)} unidades`;
+      $('tb-produtos').innerHTML = produtos.map(x => `
+        <tr><td class="code">${x.codigoProduto}</td><td>${esc(x.descricaoProduto)}</td>
+        <td class="num"><strong>${x.estoque}</strong></td><td>${nivel(x.estoque)}</td></tr>`).join('');
+
+      const nome = cod => produtos.find(x => x.codigoProduto === cod)?.descricaoProduto ?? cod;
+      $('total-movs').textContent = h.length === 1 ? '1 lançamento' : `${h.length} lançamentos`;
+      $('tb-historico').innerHTML = h.length ? h.map(m => `
+        <tr><td class="code">${m.id}</td>
+        <td>${new Date(m.dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</td>
+        <td>${esc(nome(m.codigoProduto))}</td>
+        <td><span class="tag ${m.tipo}">${m.tipo === 'Saida' ? 'Saída' : 'Entrada'}</span></td>
+        <td>${esc(m.descricao)}</td>
+        <td class="num">${m.tipo === 'Saida' ? '−' : '+'}${m.quantidade}</td>
+        <td class="num delta">${m.estoqueAnterior} → <strong>${m.estoqueFinal}</strong></td></tr>`).join('')
+        : '<tr><td colspan="7" class="empty">Nenhuma movimentação ainda. Use o formulário acima para lançar a primeira.</td></tr>';
+    }
+
+    $('sel-produto').addEventListener('change', atualizarSaldo);
+
+    $('btn-reiniciar').addEventListener('click', async () => {
+      if (!confirm('Apagar todo o histórico e voltar ao saldo inicial dos produtos?')) return;
+      await fetch('/api/estoque/movimentacoes', { method: 'DELETE' });
+      mostrar($('msg-estoque'), 'Histórico apagado. Os saldos voltaram ao valor inicial.', 'ok');
+      carregarEstoque();
+    });
+
+    $('form-estoque').addEventListener('submit', async e => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      const corpo = {
+        codigoProduto: Number(f.get('codigoProduto')),
+        tipo: f.get('tipo'),
+        quantidade: Number(f.get('quantidade')),
+        descricao: f.get('descricao'),
+      };
+      const r = await fetch('/api/estoque/movimentacoes', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo),
+      });
+      const dados = await r.json().catch(() => ({}));
+      if (r.ok) {
+        const prod = produtos.find(x => x.codigoProduto === dados.codigoProduto);
+        mostrar($('msg-estoque'),
+          `Movimentação #${dados.id} registrada. ${prod?.descricaoProduto}: ${dados.estoqueAnterior} → ${dados.estoqueFinal}. Estoque final: ${dados.estoqueFinal}.`, 'ok');
+        e.target.quantidade.value = '';
+        e.target.descricao.value = '';
+      } else {
+        mostrar($('msg-estoque'), dados.erro ?? 'Não foi possível registrar a movimentação.', 'err');
+      }
+      carregarEstoque();
+    });
+
+    // ---------- juros ----------
+    $('form-juros').addEventListener('submit', async e => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      // Aceita "1.500,00" ou "1500.00".
+      const bruto = String(f.get('valor')).trim();
+      const valor = bruto.includes(',') ? Number(bruto.replace(/\./g, '').replace(',', '.')) : Number(bruto);
+      $('msg-juros').hidden = true;
+      if (!Number.isFinite(valor)) return mostrar($('msg-juros'), 'Valor inválido. Use o formato 1.500,00.', 'err');
+
+      const r = await fetch(`/api/juros?valor=${valor}&vencimento=${f.get('vencimento')}`);
+      const dados = await r.json().catch(() => ({}));
+      if (!r.ok) return mostrar($('msg-juros'), dados.erro ?? 'Dados inválidos.', 'err');
+
+      const { resultado: x, hoje } = dados;
+      const data = iso => iso.split('-').reverse().join('/');
+      $('res-juros').innerHTML = `
+        <div class="line"><span>Valor original</span><strong>${moeda(x.valorOriginal)}</strong></div>
+        <div class="line"><span>Vencimento → hoje</span><strong>${data(f.get('vencimento'))} → ${data(hoje)}</strong></div>
+        <div class="line"><span>Dias de atraso</span><strong>${x.diasAtraso}</strong></div>
+        <div class="line"><span>Juros (2,5% × ${x.diasAtraso} dias)</span><strong>${moeda(x.valorJuros)}</strong></div>
+        <div class="total-box"><small>Valor atualizado</small><strong>${moeda(x.valorAtualizado)}</strong></div>`;
+      $('res-vazio').hidden = true;
+      $('res-juros').hidden = false;
+    });
+
+    carregarComissoes();
+    carregarEstoque();
+  </script>
+</body>
+</html>
